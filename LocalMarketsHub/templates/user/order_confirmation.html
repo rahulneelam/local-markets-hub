@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="bi bi-check-circle me-2"></i>Order Confirmed!</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="display-1 text-success mb-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <h4>Thank you for your order!</h4>
+                        <p class="text-muted">Your order #{{ order.id }} has been successfully placed.</p>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="bi bi-info-circle-fill fs-3"></i>
+                            </div>
+                            <div>
+                                <h5>What happens next?</h5>
+                                <p class="mb-0">Your order has been sent to the shop owner. You will receive updates as your order is processed. You can check your order status anytime.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Order Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <p><strong>Order Number:</strong> #{{ order.id }}</p>
+                                    <p><strong>Order Date:</strong> {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                    <p><strong>Shop:</strong> {{ order.shop.name }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Order Status:</strong> <span class="badge bg-warning">{{ order.status|capitalize }}</span></p>
+                                    <p><strong>Total:</strong> ${{ "%.2f"|format(order.total_price) }}</p>
+                                </div>
+                            </div>
+                            
+                            <h6 class="mb-3">Ordered Items</h6>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in order.items %}
+                                            <tr>
+                                                <td>{{ item.product.name }}</td>
+                                                <td>{{ item.quantity }}</td>
+                                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                                <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="3" class="text-end">Total:</th>
+                                            <th>${{ "%.2f"|format(order.total_price) }}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            
+                            <h6 class="mt-4 mb-3">Shipping Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Address:</strong><br>{{ order.address or 'Not provided' }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Phone:</strong><br>{{ order.phone or 'Not provided' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('track_order', order_id=order.id) }}" class="btn btn-primary">
+                            <i class="bi bi-truck me-1"></i> Track Order
+                        </a>
+                        <a href="{{ url_for('user_orders') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-list-ul me-1"></i> View All Orders
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('index') }}" class="btn btn-lg btn-outline-success">
+                    <i class="bi bi-shop me-1"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

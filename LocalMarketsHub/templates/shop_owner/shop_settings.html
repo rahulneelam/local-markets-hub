@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Shop Settings - {{ shop.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Shop Settings - {{ shop.name }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('shop_owner_dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Shop Settings</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Shop Image</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if shop.image_url %}
+                        <img src="{{ shop.image_url }}" alt="{{ shop.name }}" class="img-fluid rounded mb-3" style="max-height: 200px; object-fit: contain;">
+                    {% else %}
+                        <div class="placeholder-image bg-light d-flex align-items-center justify-content-center mb-3" style="height: 200px; width: 100%;">
+                            <i class="bi bi-shop display-4 text-muted"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <form action="{{ url_for('update_shop_image', shop_id=shop.id) }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="shop_image" class="form-label">Upload Shop Image</label>
+                            <input class="form-control" type="file" id="shop_image" name="shop_image" accept="image/*">
+                            <div class="form-text">Recommended size: 800x600 pixels</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Or provide an image URL</label>
+                            <input type="url" class="form-control" id="image_url" name="image_url" value="{{ shop.image_url or '' }}" placeholder="https://example.com/image.jpg">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-cloud-upload"></i> Update Shop Image
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Shop Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">Current Status</h6>
+                            <p class="text-muted mb-0">{{ shop.status|capitalize }}</p>
+                        </div>
+                        <span class="badge bg-{{ 'success' if shop.status == 'approved' else 'warning' if shop.status == 'pending' else 'danger' }} ms-2">
+                            {{ shop.status|capitalize }}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">Created</h6>
+                            <p class="text-muted mb-0">{{ shop.created_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">Last Updated</h6>
+                            <p class="text-muted mb-0">{{ shop.updated_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Shop Information</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('update_shop_info', shop_id=shop.id) }}" method="POST">
+                        <div class="mb-3">
+                            <label for="shop_name" class="form-label">Shop Name</label>
+                            <input type="text" class="form-control" id="shop_name" name="name" value="{{ shop.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="shop_description" class="form-label">Description</label>
+                            <textarea class="form-control" id="shop_description" name="description" rows="4" required>{{ shop.description }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="shop_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="shop_email" name="email" value="{{ shop.email or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="shop_phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="shop_phone" name="phone" value="{{ shop.phone or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="shop_address" class="form-label">Address</label>
+                            <textarea class="form-control" id="shop_address" name="address" rows="2">{{ shop.address or '' }}</textarea>
+                        </div>
+                        
+                        <div class="card mb-3 border-light bg-light">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Google Maps Location</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="show_map" name="show_map" {{ 'checked' if shop.show_map else '' }}>
+                                    <label class="form-check-label" for="show_map">Show shop location on map</label>
+                                </div>
+                                
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="latitude" class="form-label">Latitude</label>
+                                        <input type="number" step="any" class="form-control" id="latitude" name="latitude" value="{{ shop.latitude or '' }}" placeholder="e.g., 40.7128">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="longitude" class="form-label">Longitude</label>
+                                        <input type="number" step="any" class="form-control" id="longitude" name="longitude" value="{{ shop.longitude or '' }}" placeholder="e.g., -74.0060">
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="bi bi-info-circle"></i> Find coordinates by searching your address on Google Maps, right-click the location and select "What's here?"
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="shop_categories" class="form-label">Shop Categories</label>
+                            <select class="form-select" id="shop_categories" name="categories" multiple>
+                                <option value="gifts" {% if 'gifts' in shop.categories %}selected{% endif %}>Gifts</option>
+                                <option value="foods" {% if 'foods' in shop.categories %}selected{% endif %}>Foods</option>
+                                <option value="dresses" {% if 'dresses' in shop.categories %}selected{% endif %}>Dresses</option>
+                                <option value="electronics" {% if 'electronics' in shop.categories %}selected{% endif %}>Electronics</option>
+                                <option value="home" {% if 'home' in shop.categories %}selected{% endif %}>Home</option>
+                                <option value="beauty" {% if 'beauty' in shop.categories %}selected{% endif %}>Beauty</option>
+                                <option value="toys" {% if 'toys' in shop.categories %}selected{% endif %}>Toys</option>
+                                <option value="books" {% if 'books' in shop.categories %}selected{% endif %}>Books</option>
+                            </select>
+                            <div class="form-text">Hold Ctrl or Cmd to select multiple categories</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Shop Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Products</h6>
+                                    <h2 class="mb-0">{{ shop.products.count() }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Orders</h6>
+                                    <h2 class="mb-0">{{ shop.orders.count() }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Revenue</h6>
+                                    <h2 class="mb-0">${{ "%.2f"|format(total_revenue) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('manage_products', shop_id=shop.id) }}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-box-seam"></i> Manage Products
+                        </a>
+                        <a href="{{ url_for('shop_orders', shop_id=shop.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-list-check"></i> View Orders
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

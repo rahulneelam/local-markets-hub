@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}My Watchlist - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">My Watchlist</h2>
+            
+            {% if watchlist_items %}
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">Saved Products</h5>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge bg-primary">{{ watchlist_items|length }} items</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Shop</th>
+                                        <th>Price</th>
+                                        <th>Status</th>
+                                        <th>Added On</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in watchlist_items %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if item.product.image_url %}
+                                                        <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="rounded me-3" style="width: 48px; height: 48px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                            <i class="bi bi-box text-secondary"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                        <small class="text-muted">{{ item.product.category or 'Uncategorized' }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('view_shop', shop_id=item.product.shop_id) }}">
+                                                    {{ item.product.shop.name }}
+                                                </a>
+                                            </td>
+                                            <td>${{ "%.2f"|format(item.product.price) }}</td>
+                                            <td>
+                                                {% if item.product.is_available and item.product.stock > 0 %}
+                                                    <span class="badge bg-success">In Stock ({{ item.product.stock }})</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Out of Stock</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.added_at.strftime('%b %d, %Y') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('view_shop', shop_id=item.product.shop_id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                    
+                                                    {% if item.product.is_available and item.product.stock > 0 %}
+                                                        <button type="button" class="btn btn-sm btn-primary add-to-cart-btn"
+                                                               data-product-id="{{ item.product.id }}"
+                                                               data-product-name="{{ item.product.name }}"
+                                                               data-product-price="{{ item.product.price }}"
+                                                               data-shop-id="{{ item.product.shop_id }}">
+                                                            <i class="bi bi-cart-plus"></i> Add to Cart
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    <form action="{{ url_for('remove_from_watchlist', item_id=item.id) }}" method="POST" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i> Remove
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-bookmark-star display-1 text-muted mb-3"></i>
+                        <h3>Your watchlist is empty</h3>
+                        <p class="lead">Save products to your watchlist to track them for later.</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-shop me-2"></i> Browse Products
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle "Add to Cart" buttons
+        const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+        
+        addToCartButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.productId;
+                const productName = this.dataset.productName;
+                const productPrice = parseFloat(this.dataset.productPrice);
+                const shopId = this.dataset.shopId;
+                
+                // Add to cart with quantity 1
+                const result = addToCart(productId, productName, productPrice, 1, shopId);
+                
+                if (result) {
+                    showNotification(`Added ${productName} to cart!`, 'success');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

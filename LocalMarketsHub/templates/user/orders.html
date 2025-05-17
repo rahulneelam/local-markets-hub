@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>My Orders</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">My Orders</li>
+            </ol>
+        </nav>
+        
+        <!-- Orders Filter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="input-group">
+                            <input type="text" id="order-search" class="form-control" placeholder="Search orders...">
+                            <button class="btn btn-primary" id="search-btn">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-md-end">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-primary filter-btn active" data-filter="all">All</button>
+                                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="pending">Pending</button>
+                                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="processing">Processing</button>
+                                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="shipped">Shipped</button>
+                                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="delivered">Delivered</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Orders List -->
+        <div class="card">
+            <div class="card-body">
+                {% if orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Shop</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                    <tr data-status="{{ order.status }}">
+                                        <td>#{{ order.id }}</td>
+                                        <td>{{ order.shop.name }}</td>
+                                        <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ order.items.count() }}</td>
+                                        <td>${{ "%.2f"|format(order.total_price) }}</td>
+                                        <td>
+                                            <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'cancelled' %}bg-danger{% elif order.status == 'shipped' %}bg-info{% elif order.status == 'processing' %}bg-primary{% else %}bg-warning{% endif %}">
+                                                {{ order.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('track_order', order_id=order.id) }}" class="btn btn-primary">
+                                                    <i class="bi bi-truck"></i> Track
+                                                </a>
+                                                <button type="button" class="btn btn-info view-order-btn" data-order-id="{{ order.id }}">
+                                                    <i class="bi bi-eye"></i> View
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Order Details Modal -->
+                    <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="orderModalLabel">Order Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body" id="orderDetails">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <span id="orderActionsContainer">
+                                        <!-- Actions will be added dynamically based on order status -->
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i> You haven't placed any orders yet.
+                        <a href="{{ url_for('index') }}" class="alert-link">Start shopping</a> to see your orders here.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup table search
+        const searchInput = document.getElementById('order-search');
+        const searchBtn = document.getElementById('search-btn');
+        const tableRows = document.querySelectorAll('#orders-table tbody tr');
+        
+        function filterOrders() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            tableRows.forEach(row => {
+                const orderId = row.cells[0].textContent.toLowerCase();
+                const shopName = row.cells[1].textContent.toLowerCase();
+                
+                if (orderId.includes(searchTerm) || shopName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        searchBtn.addEventListener('click', filterOrders);
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                filterOrders();
+            }
+        });
+        
+        // Status filters
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                const filterStatus = this.getAttribute('data-filter');
+                
+                tableRows.forEach(row => {
+                    if (filterStatus === 'all' || row.getAttribute('data-status') === filterStatus) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // View order details
+        const viewOrderButtons = document.querySelectorAll('.view-order-btn');
+        const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
+        let currentOrderId = null;
+        
+        viewOrderButtons.forEach(button => {
+            button.addEventListener('click', async function() {
+                currentOrderId = this.getAttribute('data-order-id');
+                const orderDetailsContainer = document.getElementById('orderDetails');
+                const orderActionsContainer = document.getElementById('orderActionsContainer');
+                
+                orderDetailsContainer.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                `;
+                
+                orderActionsContainer.innerHTML = '';
+                
+                orderModal.show();
+                
+                try {
+                    const response = await fetch(`/api/orders/${currentOrderId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const order = data.order;
+                        
+                        let itemsHtml = '';
+                        for (const item of order.items) {
+                            itemsHtml += `
+                                <tr>
+                                    <td>${item.product_name}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>$${parseFloat(item.price).toFixed(2)}</td>
+                                    <td>$${parseFloat(item.subtotal).toFixed(2)}</td>
+                                </tr>
+                            `;
+                        }
+                        
+                        orderDetailsContainer.innerHTML = `
+                            <div class="mb-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Order Information</h6>
+                                        <p><strong>Order ID:</strong> #${order.id}</p>
+                                        <p><strong>Date:</strong> ${new Date(order.created_at).toLocaleString()}</p>
+                                        <p><strong>Status:</strong> <span class="badge ${getStatusBadgeClass(order.status)}">${order.status}</span></p>
+                                        <p><strong>Shop:</strong> ${order.shop_name}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Shipping Information</h6>
+                                        <p><strong>Address:</strong> ${order.address || 'Not provided'}</p>
+                                        <p><strong>Phone:</strong> ${order.phone || 'Not provided'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h6>Order Items</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemsHtml}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="3" class="text-end">Total:</th>
+                                            <th>$${parseFloat(order.total_price).toFixed(2)}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        `;
+                        
+                        // Add appropriate actions based on order status
+                        if (order.status === 'pending') {
+                            orderActionsContainer.innerHTML = `
+                                <a href="${window.location.pathname}/${order.id}/cancel" class="btn btn-danger">
+                                    <i class="bi bi-x-circle me-1"></i> Cancel Order
+                                </a>
+                            `;
+                        } else if (order.status === 'delivered' || order.status === 'cancelled') {
+                            orderActionsContainer.innerHTML = `
+                                <button type="button" class="btn btn-primary reorder-btn" data-order-id="${order.id}">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Reorder
+                                </button>
+                            `;
+                            
+                            // Add reorder functionality
+                            document.querySelector('.reorder-btn').addEventListener('click', function() {
+                                reorderItems(order.items, order.shop_id);
+                            });
+                        }
+                        
+                        // Always add track button
+                        const trackBtn = document.createElement('a');
+                        trackBtn.href = `/user/track-order/${order.id}`;
+                        trackBtn.className = 'btn btn-info ms-2';
+                        trackBtn.innerHTML = '<i class="bi bi-truck me-1"></i> Track Order';
+                        orderActionsContainer.appendChild(trackBtn);
+                        
+                    } else {
+                        orderDetailsContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle me-2"></i> ${data.message || 'Error loading order details.'}
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error fetching order details:', error);
+                    orderDetailsContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i> Failed to load order details. Please try again.
+                        </div>
+                    `;
+                }
+            });
+        });
+        
+        // Helper function to get status badge class
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'delivered':
+                    return 'bg-success';
+                case 'shipped':
+                    return 'bg-info';
+                case 'processing':
+                    return 'bg-primary';
+                case 'cancelled':
+                    return 'bg-danger';
+                default:
+                    return 'bg-warning';
+            }
+        }
+        
+        // Reorder items from a previous order
+        function reorderItems(items, shopId) {
+            // Clear current cart
+            clearCart();
+            
+            // Add items to cart
+            let cart = {
+                items: [],
+                total: 0,
+                shopId: shopId
+            };
+            
+            for (const item of items) {
+                cart.items.push({
+                    product_id: item.product_id,
+                    name: item.product_name,
+                    price: parseFloat(item.price),
+                    quantity: item.quantity
+                });
+                
+                cart.total += parseFloat(item.price) * item.quantity;
+            }
+            
+            // Save to session storage
+            sessionStorage.setItem('cart', JSON.stringify(cart));
+            
+            // Sync with server
+            syncCartWithServer(cart)
+                .then(() => {
+                    window.location.href = '/user/cart';
+                })
+                .catch(error => {
+                    console.error('Error syncing cart:', error);
+                });
+        }
+    });
+</script>
+{% endblock %}

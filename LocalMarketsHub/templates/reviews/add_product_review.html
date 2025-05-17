@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if existing_review %}Edit{% else %}Add{% endif %} Review for {{ product.name }} - Marketplace Platform
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('view_shop', shop_id=product.shop_id) }}">{{ product.shop.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('product_reviews', product_id=product.id) }}">{{ product.name }} Reviews</a></li>
+                    <li class="breadcrumb-item active">{% if existing_review %}Edit{% else %}Add{% endif %} Review</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{% if existing_review %}Edit{% else %}Add{% endif %} Review for {{ product.name }}</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_product_review', product_id=product.id) }}">
+                        <div class="mb-4">
+                            <label class="form-label">Your Rating</label>
+                            <div class="rating-input">
+                                <div class="btn-group" role="group" aria-label="Rating">
+                                    {% for i in range(1, 6) %}
+                                        <input type="radio" class="btn-check" name="rating" id="rating{{ i }}" value="{{ i }}" 
+                                            {% if existing_review and existing_review.rating == i or not existing_review and i == 5 %}checked{% endif %}>
+                                        <label class="btn btn-outline-warning rating-star" for="rating{{ i }}">
+                                            <i class="bi bi-star-fill"></i>
+                                            <span class="rating-text">{{ i }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if has_purchased %}
+                            <div class="mb-4">
+                                <label for="order_id" class="form-label">Select your purchase (optional)</label>
+                                <select class="form-select" id="order_id" name="order_id">
+                                    <option value="">-- Select an order --</option>
+                                    {% for order in orders %}
+                                        <option value="{{ order.id }}" {% if existing_review and existing_review.order_id == order.id %}selected{% endif %}>
+                                            Order #{{ order.id }} ({{ order.created_at.strftime('%b %d, %Y') }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Linking your review to an order will mark it as a "Verified Purchase" review.</div>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-4">
+                            <label for="comment" class="form-label">Your Review (Optional)</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="5" placeholder="Share your experience with this product...">{% if existing_review %}{{ existing_review.comment }}{% endif %}</textarea>
+                        </div>
+                        
+                        <div class="d-flex">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> {% if existing_review %}Update{% else %}Submit{% endif %} Review
+                            </button>
+                            <a href="{{ url_for('product_reviews', product_id=product.id) }}" class="btn btn-outline-secondary ms-2">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ product.name }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if product.image_url %}
+                        <img src="{{ product.image_url }}" class="img-fluid rounded mb-3" alt="{{ product.name }}">
+                    {% endif %}
+                    
+                    <p class="mb-2">{{ product.description|truncate(150) }}</p>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Price:</span>
+                        <span class="font-weight-bold">${{ "%.2f"|format(product.price) }}</span>
+                    </div>
+                    
+                    <a href="{{ url_for('view_shop', shop_id=product.shop_id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-shop"></i> View in Shop
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Review Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="small">
+                        <li>Be honest about your experience with the product</li>
+                        <li>Be respectful and constructive</li>
+                        <li>Include specifics about the product (quality, functionality, etc.)</li>
+                        <li>Avoid personal information or offensive language</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rating-input .btn-check:checked + .rating-star,
+    .rating-input .btn-check:hover + .rating-star {
+        background-color: #ffc107;
+        color: #000;
+        border-color: #ffc107;
+    }
+    
+    .rating-text {
+        position: absolute;
+        left: -9999px;
+    }
+    
+    .rating-input .btn-group {
+        display: flex;
+    }
+    
+    .rating-input .rating-star {
+        font-size: 1.5rem;
+        padding: 0.5rem 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight stars on hover
+        const ratingStars = document.querySelectorAll('.rating-star');
+        
+        ratingStars.forEach((star, index) => {
+            star.addEventListener('mouseenter', () => {
+                // Highlight current star and all previous stars
+                for (let i = 0; i <= index; i++) {
+                    ratingStars[i].classList.add('active');
+                }
+            });
+            
+            star.addEventListener('mouseleave', () => {
+                // Remove highlight from all stars (checked state will be handled by CSS)
+                ratingStars.forEach(s => {
+                    s.classList.remove('active');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

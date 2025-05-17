@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Track Order #{{ order.id }} - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Track Order #{{ order.id }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('user_orders') }}">My Orders</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Track Order #{{ order.id }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Status Timeline -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Order Status</h5>
+                    <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'danger' if order.status == 'cancelled' else 'warning' }}">
+                        {{ order.status|capitalize }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <!-- Status Timeline -->
+                    <div class="timeline-container">
+                        {% set statuses = ['pending', 'processing', 'shipped', 'delivered'] %}
+                        {% set current_status_index = statuses.index(order.status) if order.status in statuses else -1 %}
+
+                        <div class="timeline">
+                            {% for status in statuses %}
+                                {% set idx = loop.index0 %}
+                                {% set completed = idx <= current_status_index %}
+                                {% set current = idx == current_status_index %}
+                                
+                                <div class="timeline-item {{ 'completed' if completed else '' }} {{ 'current' if current else '' }}">
+                                    <div class="timeline-badge">
+                                        {% if completed %}
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        {% elif current %}
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        {% else %}
+                                            <i class="bi bi-circle"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h6>{{ status|capitalize }}</h6>
+                                        
+                                        {% set found = false %}
+                                        {% for history in order.status_history %}
+                                            {% if history.new_status == status and not found %}
+                                                {% set found = true %}
+                                                <small class="text-muted">{{ history.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                                {% if history.notes %}
+                                                    <p class="mb-0 small">{{ history.notes }}</p>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                {% if not loop.last %}
+                                    <div class="timeline-connector {{ 'completed' if idx < current_status_index else '' }}"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        {% if order.status == 'cancelled' %}
+                            <div class="alert alert-danger mt-3">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>Order Cancelled</strong>
+                                <p class="mb-0">
+                                    {% set cancel_history = order.status_history|selectattr('new_status', 'eq', 'cancelled')|first %}
+                                    {% if cancel_history and cancel_history.notes %}
+                                        Reason: {{ cancel_history.notes }}
+                                    {% else %}
+                                        This order has been cancelled.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
+                        
+                        {% if order.status == 'delivered' %}
+                            <div class="alert alert-success mt-3">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <strong>Order Delivered!</strong>
+                                <p class="mb-0">
+                                    {% set delivery_history = order.status_history|selectattr('new_status', 'eq', 'delivered')|first %}
+                                    {% if delivery_history and delivery_history.notes %}
+                                        {{ delivery_history.notes }}
+                                    {% else %}
+                                        Your order has been delivered successfully. Thank you for shopping with us!
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Status History -->
+                    <div class="mt-4">
+                        <h6>Status History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for history in order.status_history|sort(attribute='updated_at', reverse=true) %}
+                                        <tr>
+                                            <td>{{ history.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if history.new_status == 'delivered' else 'danger' if history.new_status == 'cancelled' else 'warning' }}">
+                                                    {{ history.new_status|capitalize }}
+                                                </span>
+                                            </td>
+                                            <td>{{ history.notes }}</td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center">No status updates yet.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cancel Order (if not cancelled or delivered) -->
+            {% if order.status not in ['cancelled', 'delivered'] %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cancel Order</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">If you need to cancel this order, please provide a reason below.</p>
+                        <form action="{{ url_for('user_cancel_order', order_id=order.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be undone.');">
+                            <div class="mb-3">
+                                <label for="cancel_reason" class="form-label">Reason for Cancellation</label>
+                                <textarea class="form-control" id="cancel_reason" name="reason" rows="2" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle me-1"></i> Cancel Order
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Review Order (if delivered) -->
+            {% if order.status == 'delivered' %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Review Your Experience</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6>Review Shop</h6>
+                                        <p class="small text-muted">Share your experience with {{ order.shop.name }}</p>
+                                        <a href="{{ url_for('add_shop_review', shop_id=order.shop_id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-shop me-1"></i> Review Shop
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6>Review Products</h6>
+                                        <p class="small text-muted">Share your thoughts on the products you purchased</p>
+                                        <div>
+                                            {% for item in order.items %}
+                                                <a href="{{ url_for('add_product_review', product_id=item.product_id) }}" class="btn btn-outline-primary btn-sm mb-1">
+                                                    <i class="bi bi-star me-1"></i> Review {{ item.product.name }}
+                                                </a><br>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Order Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Order ID:</strong> #{{ order.id }}</p>
+                    <p><strong>Date Placed:</strong> {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    <p><strong>Total:</strong> ${{ "%.2f"|format(order.total_price) }}</p>
+                    <p>
+                        <strong>Shop:</strong>
+                        <a href="{{ url_for('view_shop', shop_id=order.shop_id) }}">{{ order.shop.name }}</a>
+                    </p>
+                    
+                    <hr>
+                    
+                    <h6>Shipping Information</h6>
+                    <p class="mb-1">{{ order.address or 'Not provided' }}</p>
+                    <p>Phone: {{ order.phone or 'Not provided' }}</p>
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in order.items %}
+                            <li class="list-group-item">
+                                <div class="d-flex">
+                                    {% if item.product.image_url %}
+                                        <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="placeholder-image me-3" style="width: 50px; height: 50px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div>
+                                        <h6 class="mb-0">{{ item.product.name }}</h6>
+                                        <p class="mb-0 text-muted">
+                                            <small>${{ "%.2f"|format(item.price) }} × {{ item.quantity }}</small>
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>${{ "%.2f"|format(item.price * item.quantity) }}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <div class="card-footer bg-white">
+                        <div class="d-flex justify-content-between align-items-center fw-bold">
+                            <span>Total:</span>
+                            <span>${{ "%.2f"|format(order.total_price) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Timeline Styling */
+    .timeline-container {
+        padding: 1rem 0;
+    }
+    
+    .timeline {
+        position: relative;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 25px;
+    }
+    
+    .timeline-badge {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        color: #adb5bd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        z-index: 2;
+        border: 2px solid #dee2e6;
+    }
+    
+    .timeline-connector {
+        position: absolute;
+        left: 15px;
+        top: 30px;
+        height: 40px;
+        width: 2px;
+        background-color: #dee2e6;
+        z-index: 1;
+    }
+    
+    .timeline-item.completed .timeline-badge,
+    .timeline-item.current .timeline-badge {
+        background-color: #fff;
+        color: #198754;
+        border-color: #198754;
+    }
+    
+    .timeline-item.current .timeline-badge {
+        color: #fd7e14;
+        border-color: #fd7e14;
+    }
+    
+    .timeline-connector.completed {
+        background-color: #198754;
+    }
+    
+    .timeline-content {
+        padding-bottom: 5px;
+    }
+    
+    /* Add some animation */
+    .timeline-item.current .timeline-badge i {
+        animation: spin 2s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}

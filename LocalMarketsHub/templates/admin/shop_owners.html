@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Shop Owner Management - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Shop Owner Management</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Shop Owners</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="shopOwnerSearch" placeholder="Search by name or email...">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <select class="form-select" id="sortBy">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+                <option value="shops_asc">Shops (Low to High)</option>
+                <option value="shops_desc">Shops (High to Low)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">All Shop Owners</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if shop_owners %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="shopOwnersTable">
+                        <thead>
+                            <tr>
+                                <th>Owner</th>
+                                <th>Email</th>
+                                <th>Shops</th>
+                                <th>Orders</th>
+                                <th>Revenue</th>
+                                <th>Member Since</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for owner in shop_owners %}
+                                <tr class="owner-row" 
+                                    data-name="{{ owner.username }}" 
+                                    data-email="{{ owner.email }}"
+                                    data-shops="{{ owner.shops.count() }}">
+                                    <td>
+                                        {% if owner.profile_image_url %}
+                                            <img src="{{ owner.profile_image_url }}" alt="{{ owner.username }}" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
+                                        {% else %}
+                                            <i class="bi bi-person-circle me-2 fs-4"></i>
+                                        {% endif %}
+                                        {{ owner.username }}
+                                    </td>
+                                    <td>{{ owner.email }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ owner.shops.count() }}</span>
+                                    </td>
+                                    <td>
+                                        {% set order_count = namespace(total=0) %}
+                                        {% for shop in owner.shops %}
+                                            {% set order_count.total = order_count.total + shop.orders.count() %}
+                                        {% endfor %}
+                                        {{ order_count.total }}
+                                    </td>
+                                    <td>
+                                        {% set revenue = namespace(total=0) %}
+                                        {% for shop in owner.shops %}
+                                            {% for order in shop.orders %}
+                                                {% set revenue.total = revenue.total + order.total_price %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                        ${{ "%.2f"|format(revenue.total) }}
+                                    </td>
+                                    <td>{{ owner.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_view_shop_owner', user_id=owner.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info m-3">
+                    <i class="bi bi-info-circle me-2"></i> No shop owners found.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search and sort functionality
+        const searchInput = document.getElementById('shopOwnerSearch');
+        const searchButton = document.getElementById('searchButton');
+        const sortSelect = document.getElementById('sortBy');
+        const ownerRows = document.querySelectorAll('.owner-row');
+        
+        function filterOwners() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            ownerRows.forEach(row => {
+                const ownerName = row.dataset.name.toLowerCase();
+                const ownerEmail = row.dataset.email.toLowerCase();
+                
+                if (ownerName.includes(searchTerm) || ownerEmail.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        searchButton.addEventListener('click', filterOwners);
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                filterOwners();
+            }
+        });
+        
+        // Sorting functionality
+        sortSelect.addEventListener('change', function() {
+            const table = document.getElementById('shopOwnersTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                const sortValue = sortSelect.value;
+                
+                if (sortValue === 'newest') {
+                    const dateA = new Date(a.cells[5].textContent);
+                    const dateB = new Date(b.cells[5].textContent);
+                    return dateB - dateA;
+                } else if (sortValue === 'oldest') {
+                    const dateA = new Date(a.cells[5].textContent);
+                    const dateB = new Date(b.cells[5].textContent);
+                    return dateA - dateB;
+                } else if (sortValue === 'name_asc') {
+                    return a.dataset.name.localeCompare(b.dataset.name);
+                } else if (sortValue === 'name_desc') {
+                    return b.dataset.name.localeCompare(a.dataset.name);
+                } else if (sortValue === 'shops_asc') {
+                    return parseInt(a.dataset.shops) - parseInt(b.dataset.shops);
+                } else if (sortValue === 'shops_desc') {
+                    return parseInt(b.dataset.shops) - parseInt(a.dataset.shops);
+                }
+                
+                return 0;
+            });
+            
+            // Remove existing rows
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            // Append sorted rows
+            rows.forEach(row => {
+                tbody.appendChild(row);
+            });
+        });
+    });
+</script>
+{% endblock %}

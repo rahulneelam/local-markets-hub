@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- User Profile Section -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                {% if current_user.profile_image_url %}
+                    <img src="{{ current_user.profile_image_url }}" alt="{{ current_user.username }}" class="rounded-circle mb-3" width="100" height="100">
+                {% else %}
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+                        <span class="display-4">{{ current_user.username[0]|upper }}</span>
+                    </div>
+                {% endif %}
+                
+                <h4>{{ current_user.username }}</h4>
+                <p class="text-muted">
+                    {% if current_user.first_name and current_user.last_name %}
+                        {{ current_user.first_name }} {{ current_user.last_name }}
+                    {% endif %}
+                </p>
+                <p><i class="bi bi-envelope me-2"></i>{{ current_user.email }}</p>
+                
+                {% if current_user.is_shop_owner() %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-shop me-2"></i> You are a shop owner
+                    </div>
+                    <a href="{{ url_for('shop_owner_dashboard') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2 me-1"></i> Manage Your Shop
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('request_shop') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-shop-window me-1"></i> Become a Seller
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dashboard Summary Section -->
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h4 class="mb-4">Welcome, {{ current_user.username }}!</h4>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="dashboard-stat">
+                            <h2>{{ orders|length }}</h2>
+                            <p class="text-muted"><i class="bi bi-bag me-1"></i> Total Orders</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="dashboard-stat">
+                            <h2>{{ watchlist|length }}</h2>
+                            <p class="text-muted"><i class="bi bi-bookmark-heart me-1"></i> Watchlist Items</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="dashboard-stat">
+                            <h2>${{ total_spent|default('0.00', true) }}</h2>
+                            <p class="text-muted"><i class="bi bi-cash me-1"></i> Total Spent</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Quick Links</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('user_orders') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-bag me-1"></i> My Orders
+                        </a>
+                        <a href="{{ url_for('user_watchlist') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-bookmark-heart me-1"></i> My Watchlist
+                        </a>
+                        <a href="{{ url_for('view_cart') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-cart me-1"></i> My Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Orders Section -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Orders</h5>
+                <a href="{{ url_for('user_orders') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Shop</th>
+                                    <th>Date</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                    <tr>
+                                        <td>#{{ order.id }}</td>
+                                        <td>{{ order.shop.name }}</td>
+                                        <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>${{ "%.2f"|format(order.total_price) }}</td>
+                                        <td>
+                                            <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'cancelled' %}bg-danger{% elif order.status == 'shipped' %}bg-info{% elif order.status == 'processing' %}bg-primary{% else %}bg-warning{% endif %}">
+                                                {{ order.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('track_order', order_id=order.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-truck me-1"></i> Track
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i> You haven't placed any orders yet. 
+                        <a href="{{ url_for('index') }}" class="alert-link">Browse shops</a> to get started!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Watchlist Section -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Watchlist Items</h5>
+                <a href="{{ url_for('user_watchlist') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if watchlist_items %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                        {% for item in watchlist_items %}
+                            <div class="col">
+                                <div class="card h-100 product-card">
+                                    {% if item.product.image_url %}
+                                        <img src="{{ item.product.image_url }}" class="card-img-top product-image" alt="{{ item.product.name }}">
+                                    {% else %}
+                                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ item.product.name }}</h5>
+                                        <p class="card-text text-primary fw-bold">${{ "%.2f"|format(item.product.price) }}</p>
+                                        <p class="card-text small text-muted">From: {{ item.product.shop.name }}</p>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <form action="{{ url_for('remove_from_watchlist', item_id=item.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash me-1"></i> Remove
+                                                </button>
+                                            </form>
+                                            
+                                            {% if item.product.is_available and item.product.stock > 0 %}
+                                                <button class="btn btn-sm btn-primary add-to-cart-btn" 
+                                                        data-product-id="{{ item.product.id }}" 
+                                                        data-name="{{ item.product.name }}"
+                                                        data-price="{{ item.product.price }}"
+                                                        data-shop-id="{{ item.product.shop_id }}">
+                                                    <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-secondary" disabled>
+                                                    Out of Stock
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i> Your watchlist is empty. 
+                        Add items to keep track of products you're interested in!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommended Products Section -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recommended For You</h5>
+            </div>
+            <div class="card-body">
+                {% if recommended_products %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                        {% for product in recommended_products %}
+                            <div class="col">
+                                <div class="card h-100 product-card">
+                                    {% if product.image_url %}
+                                        <img src="{{ product.image_url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                                    {% else %}
+                                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="card-title mb-0">{{ product.name }}</h5>
+                                            <form action="{{ url_for('add_to_watchlist', product_id=product.id) }}" method="POST">
+                                                <button type="submit" class="btn btn-sm watchlist-btn btn-outline-primary">
+                                                    <i class="bi bi-bookmark-heart"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <p class="card-text text-primary fw-bold">${{ "%.2f"|format(product.price) }}</p>
+                                        <p class="card-text small text-muted">From: {{ product.shop.name }}</p>
+                                        
+                                        {% if product.is_available and product.stock > 0 %}
+                                            <button class="btn btn-primary w-100 add-to-cart-btn" 
+                                                    data-product-id="{{ product.id }}" 
+                                                    data-name="{{ product.name }}"
+                                                    data-price="{{ product.price }}"
+                                                    data-shop-id="{{ product.shop_id }}">
+                                                <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-secondary w-100" disabled>
+                                                Out of Stock
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i> No recommendations available yet. 
+                        Browse more products to get personalized recommendations!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add to cart functionality
+        const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+        
+        addToCartButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const name = this.getAttribute('data-name');
+                const price = parseFloat(this.getAttribute('data-price'));
+                const shopId = this.getAttribute('data-shop-id');
+                
+                // Call the addToCart function from main.js
+                const added = addToCart(productId, name, price, 1, shopId);
+                
+                if (added) {
+                    showNotification(`Added ${name} to your cart!`, 'success');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

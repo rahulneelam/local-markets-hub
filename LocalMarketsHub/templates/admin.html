@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Username Container (Login Form or Welcome Message) -->
+        <div id="username-container" class="mb-4"></div>
+        
+        <!-- Admin Welcome Message (Initially Hidden) -->
+        <div id="admin-welcome" class="mb-4"></div>
+        
+        <!-- Admin Dashboard (Initially Hidden) -->
+        <div id="admin-dashboard" class="d-none">
+            <!-- Dashboard Stats -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Dashboard Statistics</h5>
+                    <button id="refresh-stats-btn" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="admin-stats">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status"></div>
+                            <p>Loading statistics...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending Shop Requests -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Pending Shop Requests</h5>
+                    <button id="refresh-requests-btn" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="pending-requests">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status"></div>
+                            <p>Loading requests...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- All Shops -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Shops</h5>
+                    <button id="refresh-shops-btn" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="all-shops">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status"></div>
+                            <p>Loading shops...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

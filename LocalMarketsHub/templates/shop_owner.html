@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Username Container (Login Form or Welcome Message) -->
+        <div id="username-container" class="mb-4"></div>
+        
+        <!-- Shop Owner Welcome Message (Initially Hidden) -->
+        <div id="shop-owner-welcome" class="mb-4"></div>
+        
+        <!-- Shop Owner Dashboard (Initially Hidden) -->
+        <div id="shop-owner-dashboard" class="d-none">
+            <!-- Existing Shops -->
+            <div class="mb-4">
+                <h3>Your Shops</h3>
+                <div id="owner-shops-container">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status"></div>
+                        <p>Loading your shops...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Create Shop Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Create New Shop</h5>
+                </div>
+                <div class="card-body">
+                    <form id="create-shop-form">
+                        <div class="mb-3">
+                            <label for="shop-name" class="form-label">Shop Name</label>
+                            <input type="text" class="form-control" id="shop-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="shop-description" class="form-label">Description</label>
+                            <textarea class="form-control" id="shop-description" rows="3" required></textarea>
+                            <div class="form-text">Describe your shop and what products you plan to sell.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-shop"></i> Request Shop Approval
+                        </button>
+                    </form>
+                </div>
+                <div class="card-footer small">
+                    <i class="bi bi-info-circle"></i> 
+                    Your shop request will be reviewed by an admin before it appears in the marketplace.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/shop_owner.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Admin Dashboard</h2>
+            <p class="text-muted">Welcome, {{ current_user.username }} (Administrator)</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <p class="display-4">{{ user_count }}</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_users') }}" class="text-white">View Details</a>
+                    <div class="small text-white"><i class="bi bi-people"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Shop Owners</h5>
+                    <p class="display-4">{{ shop_owner_count }}</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_shop_owners') }}" class="text-white">View Details</a>
+                    <div class="small text-white"><i class="bi bi-shop"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Shops</h5>
+                    <p class="display-4">{{ shop_count }}</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_shops') }}" class="text-white">View Details</a>
+                    <div class="small text-white"><i class="bi bi-building"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Orders</h5>
+                    <p class="display-4">{{ order_count }}</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_orders') }}" class="text-white">View Details</a>
+                    <div class="small text-white"><i class="bi bi-bag"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Pending Shop Requests</h5>
+                    <a href="{{ url_for('admin_shops') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if pending_shops %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Shop Name</th>
+                                        <th>Owner</th>
+                                        <th>Date Requested</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for shop in pending_shops %}
+                                        <tr>
+                                            <td>{{ shop.name }}</td>
+                                            <td>{{ shop.owner.username }}</td>
+                                            <td>{{ shop.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{{ url_for('admin_shop_detail', shop_id=shop.id) }}" class="btn btn-info">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('approve_shop', shop_id=shop.id) }}" class="btn btn-success">
+                                                        <i class="bi bi-check"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('reject_shop', shop_id=shop.id) }}" class="btn btn-danger">
+                                                        <i class="bi bi-x"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info m-3">
+                            <i class="bi bi-info-circle me-2"></i> No pending shop requests.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Users</h5>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Joined Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in recent_users %}
+                                        <tr>
+                                            <td>
+                                                {% if user.profile_image_url %}
+                                                    <img src="{{ user.profile_image_url }}" alt="{{ user.username }}" class="rounded-circle me-2" width="30" height="30">
+                                                {% endif %}
+                                                {{ user.username }}
+                                            </td>
+                                            <td>{{ user.email }}</td>
+                                            <td>
+                                                {% if user.is_admin %}
+                                                    <span class="badge bg-danger">Admin</span>
+                                                {% elif user.is_shop_owner() %}
+                                                    <span class="badge bg-success">Shop Owner</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Customer</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info m-3">
+                            <i class="bi bi-info-circle me-2"></i> No users found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Orders</h5>
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Shop</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                        <tr>
+                                            <td>#{{ order.id }}</td>
+                                            <td>{{ order.user.username }}</td>
+                                            <td>{{ order.shop.name }}</td>
+                                            <td>${{ "%.2f"|format(order.total_price) }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'primary' if order.status == 'pending' else 'info' if order.status == 'processing' else 'warning' if order.status == 'shipped' else 'success' if order.status == 'delivered' else 'danger' }}">
+                                                    {{ order.status|capitalize }}
+                                                </span>
+                                            </td>
+                                            <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info m-3">
+                            <i class="bi bi-info-circle me-2"></i> No orders found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Reviews</h5>
+                    <a href="{{ url_for('admin_reviews') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_reviews %}
+                        <div class="list-group list-group-flush">
+                            {% for review in recent_reviews %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            {% if review.shop_id %}
+                                                Shop Review: {{ review.shop.name }}
+                                            {% else %}
+                                                Product Review: {{ review.product.name }}
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">{{ review.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    <div class="mb-1">
+                                        {% for i in range(5) %}
+                                            {% if i < review.rating %}
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-star text-muted"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <p class="mb-1">{{ review.comment|truncate(100) }}</p>
+                                    <small>By {{ review.user.username }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info m-3">
+                            <i class="bi bi-info-circle me-2"></i> No reviews found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

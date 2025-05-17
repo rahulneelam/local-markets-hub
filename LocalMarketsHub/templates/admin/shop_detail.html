@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{{ shop.name }} - Admin - Marketplace Platform{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Shop Details: {{ shop.name }}</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_shops') }}">Shops</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ shop.name }}</li>
+            </ol>
+        </nav>
+        
+        <!-- Shop Information -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Shop Information</h5>
+                <span class="badge {% if shop.status == 'approved' %}bg-success{% elif shop.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+                    {{ shop.status }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Shop Name:</strong> {{ shop.name }}</p>
+                        <p><strong>Owner:</strong> {{ shop.owner.username }}</p>
+                        <p><strong>Created:</strong> {{ shop.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>Status:</strong> {{ shop.status }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Address:</strong> {{ shop.address or 'Not provided' }}</p>
+                        <p><strong>Phone:</strong> {{ shop.phone or 'Not provided' }}</p>
+                        <p><strong>Email:</strong> {{ shop.email or 'Not provided' }}</p>
+                        <p><strong>Products:</strong> {{ shop.products.count() }}</p>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <p><strong>Description:</strong></p>
+                    <p>{{ shop.description }}</p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mt-4">
+                    {% if shop.status == 'pending' %}
+                        <div class="d-flex gap-2">
+                            <form action="{{ url_for('approve_shop', shop_id=shop.id) }}" method="POST">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Approve Shop
+                                </button>
+                            </form>
+                            
+                            <form action="{{ url_for('reject_shop', shop_id=shop.id) }}" method="POST">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-x-circle"></i> Reject Shop
+                                </button>
+                            </form>
+                        </div>
+                    {% elif shop.status == 'approved' %}
+                        <form action="{{ url_for('reject_shop', shop_id=shop.id) }}" method="POST">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> Suspend Shop
+                            </button>
+                        </form>
+                    {% elif shop.status == 'rejected' %}
+                        <form action="{{ url_for('approve_shop', shop_id=shop.id) }}" method="POST">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Approve Shop
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Shop Products -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Products</h5>
+            </div>
+            <div class="card-body">
+                {% if products %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td>${{ "%.2f"|format(product.price) }}</td>
+                                        <td>{{ product.stock }}</td>
+                                        <td>
+                                            <span class="badge {% if product.is_available and product.stock > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                                {% if product.is_available and product.stock > 0 %}
+                                                    Available
+                                                {% else %}
+                                                    Unavailable
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td>{{ product.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> This shop doesn't have any products yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Shop Orders -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Orders</h5>
+            </div>
+            <div class="card-body">
+                {% if shop.orders.count() > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in shop.orders.order_by(Order.created_at.desc()).limit(10).all() %}
+                                    <tr>
+                                        <td>#{{ order.id }}</td>
+                                        <td>{{ order.user.username }}</td>
+                                        <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>${{ "%.2f"|format(order.total_price) }}</td>
+                                        <td>
+                                            <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'cancelled' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                {{ order.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> This shop doesn't have any orders yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

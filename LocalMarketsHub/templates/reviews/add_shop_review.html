@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if existing_review %}Edit{% else %}Add{% endif %} Review for {{ shop.name }} - Marketplace Platform
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('view_shop', shop_id=shop.id) }}">{{ shop.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('shop_reviews', shop_id=shop.id) }}">Reviews</a></li>
+                    <li class="breadcrumb-item active">{% if existing_review %}Edit{% else %}Add{% endif %} Review</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{% if existing_review %}Edit{% else %}Add{% endif %} Review for {{ shop.name }}</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_shop_review', shop_id=shop.id) }}">
+                        <div class="mb-4">
+                            <label class="form-label">Your Rating</label>
+                            <div class="rating-input">
+                                <div class="btn-group" role="group" aria-label="Rating">
+                                    {% for i in range(1, 6) %}
+                                        <input type="radio" class="btn-check" name="rating" id="rating{{ i }}" value="{{ i }}" 
+                                            {% if existing_review and existing_review.rating == i or not existing_review and i == 5 %}checked{% endif %}>
+                                        <label class="btn btn-outline-warning rating-star" for="rating{{ i }}">
+                                            <i class="bi bi-star-fill"></i>
+                                            <span class="rating-text">{{ i }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="comment" class="form-label">Your Review (Optional)</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="5" placeholder="Share your experience with this shop...">{% if existing_review %}{{ existing_review.comment }}{% endif %}</textarea>
+                        </div>
+                        
+                        <div class="d-flex">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> {% if existing_review %}Update{% else %}Submit{% endif %} Review
+                            </button>
+                            <a href="{{ url_for('shop_reviews', shop_id=shop.id) }}" class="btn btn-outline-secondary ms-2">
+                                <i class="bi bi-x"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">About {{ shop.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ shop.description|truncate(150) }}</p>
+                    <a href="{{ url_for('view_shop', shop_id=shop.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-shop"></i> Visit Shop
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Review Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="small">
+                        <li>Be honest about your experience</li>
+                        <li>Be respectful and constructive</li>
+                        <li>Focus on your experience with the shop</li>
+                        <li>Avoid personal information or offensive language</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rating-input .btn-check:checked + .rating-star,
+    .rating-input .btn-check:hover + .rating-star {
+        background-color: #ffc107;
+        color: #000;
+        border-color: #ffc107;
+    }
+    
+    .rating-text {
+        position: absolute;
+        left: -9999px;
+    }
+    
+    .rating-input .btn-group {
+        display: flex;
+    }
+    
+    .rating-input .rating-star {
+        font-size: 1.5rem;
+        padding: 0.5rem 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight stars on hover
+        const ratingStars = document.querySelectorAll('.rating-star');
+        
+        ratingStars.forEach((star, index) => {
+            star.addEventListener('mouseenter', () => {
+                // Highlight current star and all previous stars
+                for (let i = 0; i <= index; i++) {
+                    ratingStars[i].classList.add('active');
+                }
+            });
+            
+            star.addEventListener('mouseleave', () => {
+                // Remove highlight from all stars (checked state will be handled by CSS)
+                ratingStars.forEach(s => {
+                    s.classList.remove('active');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

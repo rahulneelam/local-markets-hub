@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Username Container (Login Form or Welcome Message) -->
+        <div id="username-container" class="mb-4"></div>
+        
+        <!-- User Welcome Message (Initially Hidden) -->
+        <div id="user-welcome" class="mb-4"></div>
+        
+        <!-- User Dashboard (Initially Hidden) -->
+        <div id="user-dashboard" class="d-none">
+            <!-- Shop Search -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Search Shops</h5>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            id="shop-search" 
+                            class="form-control" 
+                            placeholder="Search for shops by name..."
+                        >
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shops List -->
+            <h3>Available Shops</h3>
+            <div id="shops-container" class="mb-4">
+                <div class="text-center">
+                    <div class="spinner-border" role="status"></div>
+                    <p>Loading shops...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/user.js') }}"></script>
+{% endblock %}

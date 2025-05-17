@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Marketplace Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="jumbotron bg-dark rounded-3 p-5 mb-4 text-white">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold">Find the Best Products</h1>
+                <p class="lead">Discover amazing products from verified local sellers across multiple categories.</p>
+                <form action="{{ url_for('index') }}" method="GET" class="mt-4">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control form-control-lg" placeholder="Search shops or products..." name="q" value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-primary btn-lg" type="submit">
+                            <i class="bi bi-search me-1"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6 d-none d-md-block text-center">
+                <i class="bi bi-shop display-1 text-primary mb-3"></i>
+                <p class="lead">Join our growing marketplace today!</p>
+                {% if not current_user.is_authenticated %}
+                    <div class="mt-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light me-2">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-1"></i> Register
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Shops Section -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Featured Shops</h2>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+            View All <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    
+    {% if shops %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for shop in shops %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">{{ shop.name }}</h5>
+                                <span class="badge bg-success">{{ shop.products.count() }} Products</span>
+                            </div>
+                            <p class="card-text">{{ shop.description|truncate(100) }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Owner: {{ shop.owner.username }}</small>
+                                <a href="{{ url_for('view_shop', shop_id=shop.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-shop me-1"></i> Visit Shop
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i> No shops are available at the moment.
+            {% if current_user.is_authenticated and not current_user.is_shop_owner() %}
+                <a href="{{ url_for('request_shop') }}" class="alert-link">Become a seller</a> and open your own shop!
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+
+<!-- Categories Section -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Browse Categories</h2>
+        {% if request.args.get('category') %}
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i> Clear Filter
+            </a>
+        {% endif %}
+    </div>
+    
+    <!-- New Category Filter Component -->
+    {% include 'components/category_filter.html' %}
+    
+    <!-- Visual Category Cards -->
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3 mt-4">
+        <div class="col">
+            <div class="card text-center h-100 {% if request.args.get('category') == 'electronics' %}border-primary{% endif %}">
+                <div class="card-body">
+                    <i class="bi bi-laptop display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Electronics</h5>
+                    <a href="{{ url_for('index', category='electronics') }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card text-center h-100 {% if request.args.get('category') == 'foods' %}border-primary{% endif %}">
+                <div class="card-body">
+                    <i class="bi bi-cup-hot display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Foods</h5>
+                    <a href="{{ url_for('index', category='foods') }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card text-center h-100 {% if request.args.get('category') == 'dresses' %}border-primary{% endif %}">
+                <div class="card-body">
+                    <i class="bi bi-handbag display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Dresses</h5>
+                    <a href="{{ url_for('index', category='dresses') }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card text-center h-100 {% if request.args.get('category') == 'home' %}border-primary{% endif %}">
+                <div class="card-body">
+                    <i class="bi bi-house display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Home</h5>
+                    <a href="{{ url_for('index', category='home') }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card text-center h-100 {% if request.args.get('category') == 'toys' %}border-primary{% endif %}">
+                <div class="card-body">
+                    <i class="bi bi-controller display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Toys</h5>
+                    <a href="{{ url_for('index', category='toys') }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card text-center h-100 {% if request.args.get('category') == 'gifts' %}border-primary{% endif %}">
+                <div class="card-body">
+                    <i class="bi bi-gift display-5 text-primary mb-3"></i>
+                    <h5 class="card-title">Gifts</h5>
+                    <a href="{{ url_for('index', category='gifts') }}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            {% if current_category %}
+                {{ current_category|capitalize }} Products
+            {% elif search_query %}
+                Search Results for "{{ search_query }}"
+            {% else %}
+                Featured Products
+            {% endif %}
+        </h2>
+    </div>
+    
+    {% if products %}
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for product in products %}
+                <div class="col">
+                    <div class="card h-100">
+                        {% if product.image_url %}
+                            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="bi bi-box display-4 text-secondary"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">{{ product.description|truncate(100) }}</p>
+                            {% if product.category %}
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">{{ product.category }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5 mb-0">${{ "%.2f"|format(product.price) }}</span>
+                                {% if product.stock > 0 %}
+                                    <span class="badge bg-success">In Stock</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ product.shop.name }}</small>
+                                <a href="{{ url_for('view_shop', shop_id=product.shop_id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye me-1"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            {% if current_category %}
+                <i class="bi bi-info-circle me-2"></i> No products found in the {{ current_category }} category.
+            {% elif search_query %}
+                <i class="bi bi-info-circle me-2"></i> No products found matching your search "{{ search_query }}".
+            {% else %}
+                <i class="bi bi-info-circle me-2"></i> No products are available at the moment.
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+
+<!-- How It Works Section -->
+<section class="mb-5">
+    <h2 class="mb-4">How It Works</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        <div class="col">
+            <div class="card h-100 border-0 bg-transparent">
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-search display-6"></i>
+                    </div>
+                    <h4>Browse Shops</h4>
+                    <p>Search for shops and products from verified sellers in your area.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 border-0 bg-transparent">
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-cart display-6"></i>
+                    </div>
+                    <h4>Add to Cart</h4>
+                    <p>Add products to your cart and proceed to checkout when ready.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 border-0 bg-transparent">
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-truck display-6"></i>
+                    </div>
+                    <h4>Get Delivery</h4>
+                    <p>Track your order and receive it at your doorstep.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Join as Seller Section -->
+{% if current_user.is_authenticated and not current_user.is_shop_owner() %}
+    <section class="mb-5">
+        <div class="card bg-dark text-white">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3>Become a Seller</h3>
+                        <p class="lead">Start selling your products on our platform and reach thousands of potential customers.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="{{ url_for('request_shop') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-shop-window me-1"></i> Request Shop
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

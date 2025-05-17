@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Products - {{ shop.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Manage Products - {{ shop.name }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('shop_owner_dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Manage Products</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Add New Product</h5>
+                    <button class="btn btn-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#addProductForm" aria-expanded="false" aria-controls="addProductForm">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="collapse" id="addProductForm">
+                    <div class="card-body">
+                        <form action="{{ url_for('add_product', shop_id=shop.id) }}" method="POST">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">Product Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label">Category</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="" selected>Select a category</option>
+                                        <option value="gifts">Gifts</option>
+                                        <option value="foods">Foods</option>
+                                        <option value="dresses">Dresses</option>
+                                        <option value="electronics">Electronics</option>
+                                        <option value="home">Home</option>
+                                        <option value="beauty">Beauty</option>
+                                        <option value="toys">Toys</option>
+                                        <option value="books">Books</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="price" class="form-label">Price ($)</label>
+                                    <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="stock" class="form-label">Stock Quantity</label>
+                                    <input type="number" min="0" class="form-control" id="stock" name="stock" required>
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="is_available" name="is_available" checked>
+                                <label class="form-check-label" for="is_available">
+                                    Product available for purchase
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add Product
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchProducts" placeholder="Search products...">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <select class="form-select" id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="gifts">Gifts</option>
+                <option value="foods">Foods</option>
+                <option value="dresses">Dresses</option>
+                <option value="electronics">Electronics</option>
+                <option value="home">Home</option>
+                <option value="beauty">Beauty</option>
+                <option value="toys">Toys</option>
+                <option value="books">Books</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <select class="form-select" id="availabilityFilter">
+                <option value="">All Products</option>
+                <option value="available">Available Only</option>
+                <option value="unavailable">Unavailable Only</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row" id="productGrid">
+        {% if products %}
+            {% for product in products %}
+                <div class="col-md-4 mb-4 product-item" 
+                    data-name="{{ product.name }}" 
+                    data-category="{{ product.category or '' }}" 
+                    data-available="{{ 'true' if product.is_available else 'false' }}">
+                    <div class="card h-100">
+                        <div class="position-relative">
+                            {% if product.image_url %}
+                                <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 180px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light text-center p-4" style="height: 180px;">
+                                    <i class="bi bi-box-seam display-4 text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <span class="position-absolute top-0 end-0 badge bg-primary m-2">${{ "%.2f"|format(product.price) }}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text small text-muted">{{ product.description|truncate(100) }}</p>
+                            
+                            {% if product.category %}
+                                <span class="badge bg-secondary mb-2">{{ product.category }}</span>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="badge bg-{{ 'success' if product.is_available else 'danger' }}">
+                                    {{ 'Available' if product.is_available else 'Not Available' }}
+                                </span>
+                                <small class="text-muted">{{ product.stock }} in stock</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{{ url_for('edit_product', shop_id=shop.id, product_id=product.id) }}" class="btn btn-primary w-100">
+                                <i class="bi bi-pencil"></i> Edit Product
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> You don't have any products yet. Use the form above to add your first product!
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filters functionality
+        const searchInput = document.getElementById('searchProducts');
+        const searchButton = document.getElementById('searchButton');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const availabilityFilter = document.getElementById('availabilityFilter');
+        const productItems = document.querySelectorAll('.product-item');
+        
+        function filterProducts() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const categoryValue = categoryFilter.value.toLowerCase();
+            const availabilityValue = availabilityFilter.value;
+            
+            productItems.forEach(item => {
+                const productName = item.dataset.name.toLowerCase();
+                const productCategory = item.dataset.category.toLowerCase();
+                const productAvailable = item.dataset.available === 'true';
+                
+                // Check if product matches all filters
+                const matchesSearch = productName.includes(searchTerm);
+                const matchesCategory = categoryValue === '' || productCategory === categoryValue;
+                const matchesAvailability = availabilityValue === '' || 
+                                          (availabilityValue === 'available' && productAvailable) || 
+                                          (availabilityValue === 'unavailable' && !productAvailable);
+                
+                // Show or hide based on filter matches
+                if (matchesSearch && matchesCategory && matchesAvailability) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add event listeners for filters
+        searchButton.addEventListener('click', filterProducts);
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                filterProducts();
+            }
+        });
+        categoryFilter.addEventListener('change', filterProducts);
+        availabilityFilter.addEventListener('change', filterProducts);
+    });
+</script>
+{% endblock %}

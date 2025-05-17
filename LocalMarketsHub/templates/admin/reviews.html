@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}Reviews Management - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Reviews Management</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Reviews</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" id="reviewSearch" placeholder="Search reviews...">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <select class="form-select" id="reviewType">
+                <option value="all">All Reviews</option>
+                <option value="shop">Shop Reviews</option>
+                <option value="product">Product Reviews</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <select class="form-select" id="sortBy">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="rating_high">Rating (High to Low)</option>
+                <option value="rating_low">Rating (Low to High)</option>
+            </select>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" id="reviewTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-reviews" type="button" role="tab" aria-controls="all-reviews" aria-selected="true">
+                All Reviews <span class="badge bg-secondary ms-1">{{ shop_reviews|length + product_reviews|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="shop-tab" data-bs-toggle="tab" data-bs-target="#shop-reviews" type="button" role="tab" aria-controls="shop-reviews" aria-selected="false">
+                Shop Reviews <span class="badge bg-secondary ms-1">{{ shop_reviews|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product-reviews" type="button" role="tab" aria-controls="product-reviews" aria-selected="false">
+                Product Reviews <span class="badge bg-secondary ms-1">{{ product_reviews|length }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="reviewTabsContent">
+        <div class="tab-pane fade show active" id="all-reviews" role="tabpanel" aria-labelledby="all-tab">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="allReviewsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>User</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                                <th>Item</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for review in shop_reviews %}
+                                <tr class="review-row" data-type="shop" data-rating="{{ review.rating }}">
+                                    <td>#{{ review.id }}</td>
+                                    <td><span class="badge bg-info">Shop</span></td>
+                                    <td>{{ review.user.username }}</td>
+                                    <td>
+                                        {% for i in range(5) %}
+                                            <i class="bi bi-star{% if i < review.rating %}-fill text-warning{% endif %}"></i>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ review.comment|truncate(50) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_shop_detail', shop_id=review.shop.id) }}">
+                                            {{ review.shop.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ review.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-review-btn" 
+                                                data-review-id="{{ review.id }}" 
+                                                data-review-type="shop" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#reviewDetailModal">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <a href="{{ url_for('admin_delete_shop_review', review_id=review.id) }}" class="btn btn-sm btn-outline-danger" 
+                                           onclick="return confirm('Are you sure you want to delete this review?');">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            {% for review in product_reviews %}
+                                <tr class="review-row" data-type="product" data-rating="{{ review.rating }}">
+                                    <td>#{{ review.id }}</td>
+                                    <td><span class="badge bg-primary">Product</span></td>
+                                    <td>{{ review.user.username }}</td>
+                                    <td>
+                                        {% for i in range(5) %}
+                                            <i class="bi bi-star{% if i < review.rating %}-fill text-warning{% endif %}"></i>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ review.comment|truncate(50) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('product_reviews', product_id=review.product.id) }}">
+                                            {{ review.product.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ review.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-review-btn" 
+                                                data-review-id="{{ review.id }}" 
+                                                data-review-type="product" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#reviewDetailModal">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <a href="{{ url_for('admin_delete_product_review', review_id=review.id) }}" class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to delete this review?');">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="shop-reviews" role="tabpanel" aria-labelledby="shop-tab">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                                <th>Shop</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for review in shop_reviews %}
+                                <tr>
+                                    <td>#{{ review.id }}</td>
+                                    <td>{{ review.user.username }}</td>
+                                    <td>
+                                        {% for i in range(5) %}
+                                            <i class="bi bi-star{% if i < review.rating %}-fill text-warning{% endif %}"></i>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ review.comment|truncate(50) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_shop_detail', shop_id=review.shop.id) }}">
+                                            {{ review.shop.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ review.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-review-btn" 
+                                                data-review-id="{{ review.id }}" 
+                                                data-review-type="shop" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#reviewDetailModal">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <a href="{{ url_for('admin_delete_shop_review', review_id=review.id) }}" class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to delete this review?');">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="product-reviews" role="tabpanel" aria-labelledby="product-tab">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                                <th>Product</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for review in product_reviews %}
+                                <tr>
+                                    <td>#{{ review.id }}</td>
+                                    <td>{{ review.user.username }}</td>
+                                    <td>
+                                        {% for i in range(5) %}
+                                            <i class="bi bi-star{% if i < review.rating %}-fill text-warning{% endif %}"></i>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ review.comment|truncate(50) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('product_reviews', product_id=review.product.id) }}">
+                                            {{ review.product.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ review.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-review-btn" 
+                                                data-review-id="{{ review.id }}" 
+                                                data-review-type="product" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#reviewDetailModal">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <a href="{{ url_for('admin_delete_product_review', review_id=review.id) }}" class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to delete this review?');">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Detail Modal -->
+    <div class="modal fade" id="reviewDetailModal" tabindex="-1" aria-labelledby="reviewDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reviewDetailModalLabel">Review Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="reviewDetailContent">
+                    <!-- Content will be loaded dynamically -->
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="#" id="deleteReviewBtn" class="btn btn-danger">Delete Review</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter and search functionality
+        const searchInput = document.getElementById('reviewSearch');
+        const searchButton = document.getElementById('searchButton');
+        const reviewTypeSelect = document.getElementById('reviewType');
+        const sortSelect = document.getElementById('sortBy');
+        const reviewRows = document.querySelectorAll('.review-row');
+        
+        function filterReviews() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const reviewType = reviewTypeSelect.value;
+            
+            reviewRows.forEach(row => {
+                const type = row.dataset.type;
+                const rowText = row.textContent.toLowerCase();
+                
+                const matchesSearch = rowText.includes(searchTerm);
+                const matchesType = reviewType === 'all' || type === reviewType;
+                
+                if (matchesSearch && matchesType) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        searchButton.addEventListener('click', filterReviews);
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                filterReviews();
+            }
+        });
+        reviewTypeSelect.addEventListener('change', filterReviews);
+        
+        // Sorting functionality
+        sortSelect.addEventListener('change', function() {
+            const table = document.getElementById('allReviewsTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                const sortValue = sortSelect.value;
+                
+                if (sortValue === 'newest') {
+                    const dateA = new Date(a.cells[6].textContent);
+                    const dateB = new Date(b.cells[6].textContent);
+                    return dateB - dateA;
+                } else if (sortValue === 'oldest') {
+                    const dateA = new Date(a.cells[6].textContent);
+                    const dateB = new Date(b.cells[6].textContent);
+                    return dateA - dateB;
+                } else if (sortValue === 'rating_high') {
+                    const ratingA = parseInt(a.dataset.rating);
+                    const ratingB = parseInt(b.dataset.rating);
+                    return ratingB - ratingA;
+                } else if (sortValue === 'rating_low') {
+                    const ratingA = parseInt(a.dataset.rating);
+                    const ratingB = parseInt(b.dataset.rating);
+                    return ratingA - ratingB;
+                }
+                
+                return 0;
+            });
+            
+            // Remove existing rows
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            // Append sorted rows
+            rows.forEach(row => {
+                tbody.appendChild(row);
+            });
+        });
+        
+        // Review detail modal
+        const viewReviewButtons = document.querySelectorAll('.view-review-btn');
+        viewReviewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const reviewId = this.dataset.reviewId;
+                const reviewType = this.dataset.reviewType;
+                
+                // Set up delete button
+                const deleteButton = document.getElementById('deleteReviewBtn');
+                if (reviewType === 'shop') {
+                    deleteButton.href = `/admin/shop-reviews/${reviewId}/delete`;
+                } else {
+                    deleteButton.href = `/admin/product-reviews/${reviewId}/delete`;
+                }
+                
+                // In a real implementation, you would load review details via AJAX
+                // For this example, we'll simulate with data from the page
+                const reviewDetailContent = document.getElementById('reviewDetailContent');
+                
+                // Find the review row
+                const reviewRow = this.closest('tr');
+                const reviewUser = reviewRow.cells[2].textContent.trim();
+                const reviewRating = reviewRow.cells[3].innerHTML;
+                const reviewComment = reviewRow.cells[4].textContent.trim();
+                const reviewItem = reviewRow.cells[5].textContent.trim();
+                const reviewDate = reviewRow.cells[6].textContent.trim();
+                
+                // Build the content
+                reviewDetailContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Review Details</h6>
+                            <p><strong>Type:</strong> ${reviewType === 'shop' ? 'Shop Review' : 'Product Review'}</p>
+                            <p><strong>Item:</strong> ${reviewItem}</p>
+                            <p><strong>Date:</strong> ${reviewDate}</p>
+                            <p><strong>Rating:</strong></p>
+                            <div class="mb-3">${reviewRating}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>User Information</h6>
+                            <p><strong>Username:</strong> ${reviewUser}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Comment</h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    ${reviewComment.length ? reviewComment : '<em>No comment provided</em>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+    });
+</script>
+{% endblock %}

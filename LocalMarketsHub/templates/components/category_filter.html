@@ -1,0 +1,30 @@
+<!-- Category Filters Component -->
+<div class="category-filter mb-4">
+    <h5>Browse by Category</h5>
+    <div class="category-buttons">
+        <a href="{{ url_for('index') }}" class="category-btn {% if not request.args.get('category') %}active{% endif %}">
+            <i class="bi bi-grid"></i> All Categories
+        </a>
+        <a href="{{ url_for('index', category='gifts') }}" class="category-btn {% if request.args.get('category') == 'gifts' %}active{% endif %}">
+            <i class="bi bi-gift"></i> Gifts
+        </a>
+        <a href="{{ url_for('index', category='foods') }}" class="category-btn {% if request.args.get('category') == 'foods' %}active{% endif %}">
+            <i class="bi bi-cup-hot"></i> Foods
+        </a>
+        <a href="{{ url_for('index', category='dresses') }}" class="category-btn {% if request.args.get('category') == 'dresses' %}active{% endif %}">
+            <i class="bi bi-handbag"></i> Dresses
+        </a>
+        <a href="{{ url_for('index', category='electronics') }}" class="category-btn {% if request.args.get('category') == 'electronics' %}active{% endif %}">
+            <i class="bi bi-laptop"></i> Electronics
+        </a>
+        <a href="{{ url_for('index', category='home') }}" class="category-btn {% if request.args.get('category') == 'home' %}active{% endif %}">
+            <i class="bi bi-house"></i> Home
+        </a>
+        <a href="{{ url_for('index', category='beauty') }}" class="category-btn {% if request.args.get('category') == 'beauty' %}active{% endif %}">
+            <i class="bi bi-droplet"></i> Beauty
+        </a>
+        <a href="{{ url_for('index', category='toys') }}" class="category-btn {% if request.args.get('category') == 'toys' %}active{% endif %}">
+            <i class="bi bi-controller"></i> Toys
+        </a>
+    </div>
+</div>
